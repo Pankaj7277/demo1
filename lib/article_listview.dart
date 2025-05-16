@@ -25,41 +25,43 @@ class _ArticleListviewState extends State<ArticleListview> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
         setState(() {
-          _articles = data['results'];
+          if (widget.isSearch == true) {
+            _articles = data['response']['docs'];
+          } else {
+            _articles = data['results'];
+          }
           _isLoading = false;
-          debugPrint(_articles.toString());
         });
+
+        debugPrint(_articles.toString());
       } else {
-        throw Exception(
-            'Failed to load data. Status Code: ${response.statusCode}');
+        throw Exception('Failed to load data. Status Code: ${response.statusCode}');
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
         _error = e.toString();
-        debugPrint(_error);
       });
+      debugPrint('Error: $_error');
     }
   }
 
-  updateUrl() {
-    if (widget.isSearch != true) {
-      updatedUrl =
-          "https://api.nytimes.com/svc/mostpopular/v2/${widget.type}/7.json?api-key=83SdRzKA36oUu7ATaGw9VnGWF64KROWk";
+
+  String buildUrl() {
+    if (widget.isSearch) {
+      return 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=${widget.searchValue}&api-key=83SdRzKA36oUu7ATaGw9VnGWF64KROWk';
     } else {
-      updatedUrl =
-      'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=${widget.searchValue}&api-key=83SdRzKA36oUu7ATaGw9VnGWF64KROWk';
-  }
-    print(updatedUrl);
+      return 'https://api.nytimes.com/svc/mostpopular/v2/${widget.type}/7.json?api-key=83SdRzKA36oUu7ATaGw9VnGWF64KROWk';
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    print(widget.searchValue);
-    updateUrl();
-    fetchApi(url: updatedUrl);
+    final url = buildUrl();
+    fetchApi(url: url);
   }
 
   @override
@@ -80,9 +82,17 @@ class _ArticleListviewState extends State<ArticleListview> {
                   itemCount: _articles.length,
                   itemBuilder: (context, index) {
                     final article = _articles[index];
+
+                    final title = widget.isSearch == true
+                        ? article['headline']['main']
+                        : article['title'];
+
+                    final date = widget.isSearch == true
+                        ? article['pub_date']
+                        : article['published_date'];
                     return ListTile(
-                      title: Text(article['title'] ?? 'No Title'),
-                      subtitle: Text(article['published_date'] ?? 'No Date'),
+                      title: Text(title ?? 'No Title'),
+                      subtitle: Text(date ?? 'No Date'),
                     );
                   }),
     );
